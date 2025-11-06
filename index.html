@@ -3,21 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Selector de Departamentos</title>
+  <title>Simulador de Deudor IA</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 text-gray-900">
 
-  <!-- 🔝 Barra superior -->
+  <!-- BARRA SUPERIOR -->
   <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto flex items-center justify-between p-2">
-
-      <!-- Sección izquierda: título y selector -->
       <div class="flex items-center gap-3">
-        <h1 class="text-sm md:text-base font-medium text-gray-700">Selecciona un Departamento</h1>
+        <h1 class="text-sm font-medium text-gray-700">Selecciona un Departamento</h1>
         <select id="departamento"
-                class="border border-gray-300 p-1 rounded-md text-sm"
-                aria-label="Departamento">
+                class="border border-gray-300 p-1 rounded-md text-sm">
           <option value="">-- Selecciona --</option>
           <option value="BANCO">BANCO</option>
           <option value="AUNA">AUNA</option>
@@ -26,8 +23,7 @@
         </select>
       </div>
 
-      <!-- Sección derecha: botones -->
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2">
         <button id="btnInicio"
                 class="bg-green-500 hover:bg-green-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow-sm transition">
           🟢 Inicio
@@ -40,28 +36,48 @@
     </div>
   </header>
 
-  <!-- 🖼️ Contenido principal -->
+  <!-- IMAGEN A PANTALLA COMPLETA -->
   <main class="pt-12">
-    <div class="w-screen h-[calc(100vh-3rem)] flex items-center justify-center overflow-hidden">
+    <div class="w-screen h-[calc(100vh-10rem)] flex items-center justify-center overflow-hidden">
       <img id="imagenDepartamento"
            src=""
            alt=""
            class="w-full h-full object-contain select-none"
            style="image-rendering: -webkit-optimize-contrast;" />
     </div>
-    <p id="msg" class="text-center text-xs text-gray-500 mt-1"></p>
+
+    <!-- PANEL DE ESTADO + TRANSCRIPCIONES -->
+    <section class="max-w-4xl mx-auto px-3 pb-6">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <p id="estado" class="text-xs text-gray-600">Estado: detenido</p>
+        <p id="rolInfo" class="text-xs text-gray-600">Rol: sin determinar (la IA no sabe quién llama)</p>
+      </div>
+      <div id="chat"
+           class="mt-3 bg-white border border-gray-200 rounded-lg p-3 h-56 overflow-auto text-sm leading-relaxed">
+      </div>
+      <p id="msg" class="text-center text-xs text-gray-500 mt-2"></p>
+    </section>
   </main>
 
   <script>
+    /**********************
+     * CONFIGURACIÓN       *
+     **********************/
+    const AI_API_URL = "/api/chat"; // usa tu función interna de Vercel
+    const MODEL = "gpt-4o-mini"; // modelo que uses en tu backend
+
     const selector = document.getElementById('departamento');
     const imagen = document.getElementById('imagenDepartamento');
     const msg = document.getElementById('msg');
     const btnInicio = document.getElementById('btnInicio');
     const btnDetener = document.getElementById('btnDetener');
+    const chat = document.getElementById('chat');
+    const estado = document.getElementById('estado');
+    const rolInfo = document.getElementById('rolInfo');
 
     const rutas = {
       BANCO: ["/img/banco.jpg", "banco.jpg"],
-      AUNA:  ["/img/AUNA.jpg", "AUNA.jpg"],
+      AUNA:  ["https://via.placeholder.com/1600x900.png?text=AUNA"],
       DUPREE:["https://via.placeholder.com/1600x900.png?text=DUPREE"],
       NATURA:["https://via.placeholder.com/1600x900.png?text=NATURA"]
     };
@@ -93,31 +109,170 @@
 
       cargarConFallback(
         sources,
-        (okSrc) => {
-          imagen.src = okSrc;
-          imagen.alt = valor;
-        },
-        () => {
-          msg.textContent = "No se encontró la imagen para " + valor + ".";
-        }
+        (okSrc) => { imagen.src = okSrc; imagen.alt = valor; },
+        () => { msg.textContent = "No se encontró la imagen para " + valor + "."; }
       );
     }
 
-    // Por defecto muestra BANCO
     selector.value = "BANCO";
     mostrarImagen("BANCO");
+    selector.addEventListener('change', () => mostrarImagen(selector.value));
 
-    selector.addEventListener('change', () => {
-      mostrarImagen(selector.value);
-    });
+    /**********************
+     * ROL Y CONTEXTO      *
+     **********************/
+    let rolDeterminado = false;
+    let rolActual = null;
 
-    // ⚙️ Acciones de botones
+    function rolDescripcion(dep) {
+      switch (dep) {
+        case "BANCO":  return "Cliente con deuda financiera (banco)";
+        case "AUNA":   return "Cliente con deuda Oncosalud (AUNA)";
+        case "NATURA": return "Cliente con deuda de cosméticos Natura";
+        case "DUPREE": return "Cliente con deuda de ropa Dupree";
+        default:       return "Cliente deudor";
+      }
+    }
+
+    const activadores = ["banco", "auna", "natura", "dupree", "oncosalud"];
+
+    function detectarActivacionRol(texto) {
+      const lower = texto.toLowerCase();
+      if (activadores.some(k => lower.includes(k))) {
+        rolDeterminado = true;
+        rolActual = selector.value || "BANCO";
+        rolInfo.textContent = `Rol: ${rolDescripcion(rolActual)} (activado tras mención del asesor)`;
+      }
+    }
+
+    function buildSystemPrompt() {
+      const dep = rolActual || selector.value || "BANCO";
+      const contexto = {
+        BANCO:  "deuda financiera bancaria.",
+        AUNA:   "deuda de Oncosalud (servicio médico).",
+        NATURA: "deuda de productos cosméticos por catálogo.",
+        DUPREE: "deuda de ropa y accesorios por catálogo."
+      }[dep];
+
+      return `
+Eres un cliente que contesta una llamada. Al inicio no sabes quién llama ni el motivo.
+Habla en tono natural y frases cortas, español de Perú.
+
+Cuando el asesor mencione el banco o empresa, adopta el rol de ${rolDescripcion(dep)}.
+Asume que tienes ${contexto}, pero no puedes pagar por falta de dinero o problemas personales.
+
+Sé educado, evasivo y coherente: no te comprometas a pagar, ofrece excusas razonables.
+Si no sabes quién llama, pregunta: "¿De dónde me llama?" o "¿Cuál es el motivo?".
+`;
+    }
+
+    /**********************
+     * VOZ Y RECONOCIMIENTO *
+     **********************/
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const synth = window.speechSynthesis;
+
+    let recognition = null;
+    let corriendo = false;
+    let mensajes = [];
+
+    function addMsg(role, content) {
+      mensajes.push({ role, content });
+      const wrap = document.createElement('div');
+      wrap.className = role === 'user' ? 'text-left' : 'text-right';
+      const pill = document.createElement('div');
+      pill.className = (role === 'user')
+        ? 'inline-block bg-gray-100 border border-gray-200 rounded px-2 py-1 my-1'
+        : 'inline-block bg-indigo-50 border border-indigo-100 text-indigo-900 rounded px-2 py-1 my-1';
+      pill.textContent = content;
+      wrap.appendChild(pill);
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function speak(text) {
+      if (!text) return;
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'es-PE';
+      utter.rate = 1.0;
+      synth.cancel();
+      synth.speak(utter);
+    }
+
+    async function callAI(userText) {
+      if (!rolDeterminado) detectarActivacionRol(userText);
+      const systemPrompt = buildSystemPrompt();
+      const history = [
+        { role: "system", content: systemPrompt },
+        ...mensajes.slice(-8),
+        { role: "user", content: userText }
+      ];
+
+      try {
+        const res = await fetch(AI_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: MODEL, messages: history })
+        });
+        const data = await res.json();
+        const aiText = data?.choices?.[0]?.message?.content || "No tengo respuesta.";
+        addMsg("assistant", aiText);
+        speak(aiText);
+      } catch (e) {
+        console.error(e);
+        addMsg("assistant", "Error al contactar con la IA.");
+        speak("Hubo un problema técnico.");
+      }
+    }
+
+    function startRecognition() {
+      if (!SpeechRecognition) {
+        addMsg("assistant", "Tu navegador no soporta reconocimiento de voz. Usa Chrome.");
+        return;
+      }
+      recognition = new SpeechRecognition();
+      recognition.lang = 'es-PE';
+      recognition.interimResults = false;
+      recognition.continuous = true;
+
+      recognition.onstart = () => estado.textContent = "Estado: escuchando...";
+      recognition.onerror = () => estado.textContent = "Error de micrófono";
+      recognition.onend = () => {
+        estado.textContent = "Estado: detenido";
+        if (corriendo) try { recognition.start(); } catch(_) {}
+      };
+      recognition.onresult = (e) => {
+        const result = e.results[e.results.length - 1];
+        if (result.isFinal) {
+          const texto = result[0].transcript.trim();
+          addMsg("user", texto);
+          callAI(texto);
+        }
+      };
+      try { recognition.start(); } catch(_) {}
+    }
+
+    /**********************
+     * BOTONES            *
+     **********************/
     btnInicio.addEventListener('click', () => {
-      alert("🚀 Iniciado correctamente");
+      if (corriendo) return;
+      corriendo = true;
+      estado.textContent = "Estado: iniciando...";
+      mensajes = [];
+      rolDeterminado = false;
+      rolActual = null;
+      rolInfo.textContent = "Rol: sin determinar (la IA no sabe quién llama)";
+      addMsg("assistant", "Hola, buenas. ¿Con quién tengo el gusto?");
+      speak("Hola, buenas. ¿Con quién tengo el gusto?");
+      startRecognition();
     });
 
     btnDetener.addEventListener('click', () => {
-      alert("🛑 Proceso detenido");
+      corriendo = false;
+      estado.textContent = "Estado: detenido";
+      try { recognition && recognition.stop(); } catch(_) {}
+      synth.cancel();
     });
   </script>
 </body>
