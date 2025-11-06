@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selector de Departamentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
+
+  <h1 class="text-2xl font-bold mb-4">Selecciona un Departamento</h1>
+
+  <!-- Selector -->
+  <select id="departamento" class="border p-2 rounded-md text-lg">
+    <option value="">-- Selecciona --</option>
+    <option value="BANCO">BANCO</option>
+    <option value="AUNA">AUNA</option>
+    <option value="DUPREE">DUPREE</option>
+    <option value="NATURA">NATURA</option>
+  </select>
+
+  <!-- Contenedor para la imagen -->
+  <div id="imagenContainer" class="mt-6">
+    <img id="imagenDepartamento" src="" alt="" class="w-80 h-auto rounded-lg shadow-lg hidden">
+  </div>
+
+  <script>
+    const selector = document.getElementById('departamento');
+    const imagen = document.getElementById('imagenDepartamento');
+
+    selector.addEventListener('change', () => {
+      const valor = selector.value;
+
+      // Reinicia la imagen
+      imagen.classList.add('hidden');
+      imagen.src = "";
+
+      // Asigna la imagen según la opción
+      if (valor === "BANCO") {
+        imagen.src = "https://via.placeholder.com/400x250.png?text=BANCO"; // ← cambia este link por tu foto real
+        imagen.alt = "Banco";
+        imagen.classList.remove('hidden');
+      }
+
+      if (valor === "AUNA") {
+        imagen.src = "https://via.placeholder.com/400x250.png?text=AUNA";
+        imagen.alt = "Auna";
+        imagen.classList.remove('hidden');
+      }
+
+      if (valor === "DUPREE") {
+        imagen.src = "https://via.placeholder.com/400x250.png?text=DUPREE";
+        imagen.alt = "Dupree";
+        imagen.classList.remove('hidden');
+      }
+
+      if (valor === "NATURA") {
+        imagen.src = "https://via.placeholder.com/400x250.png?text=NATURA";
+        imagen.alt = "Natura";
+        imagen.classList.remove('hidden');
+      }
+    });
+  </script>
+
+</body>
+</html>
