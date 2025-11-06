@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Selector de Departamentos</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-6">
 
   <h1 class="text-2xl font-bold mb-4">Selecciona un Departamento</h1>
 
@@ -21,46 +21,69 @@
 
   <!-- Contenedor para la imagen -->
   <div id="imagenContainer" class="mt-6">
-    <img id="imagenDepartamento" src="" alt="" class="w-80 h-auto rounded-lg shadow-lg hidden">
+    <img id="imagenDepartamento" src="" alt="" class="w-[420px] max-w-full h-auto rounded-lg shadow-lg hidden">
+    <p id="msg" class="text-sm text-gray-600 mt-2"></p>
   </div>
 
   <script>
     const selector = document.getElementById('departamento');
     const imagen = document.getElementById('imagenDepartamento');
+    const msg = document.getElementById('msg');
 
-    selector.addEventListener('change', () => {
-      const valor = selector.value;
+    // Mapeo de imágenes (puedes ir agregando más rutas por opción)
+    const rutas = {
+      BANCO: ["/img/banco.jpg", "banco.jpg"], // intenta primero /img/banco.jpg y luego banco.jpg (raíz)
+      AUNA:  ["https://via.placeholder.com/800x500.png?text=AUNA"],
+      DUPREE:["https://via.placeholder.com/800x500.png?text=DUPREE"],
+      NATURA:["https://via.placeholder.com/800x500.png?text=NATURA"]
+    };
 
-      // Reinicia la imagen
+    function cargarConFallback(sources, onOk, onFail) {
+      let i = 0;
+      const probe = new Image();
+      probe.onload = () => onOk(sources[i]);   // la ruta i funcionó
+      probe.onerror = () => {
+        i++;
+        if (i < sources.length) {
+          probe.src = sources[i];
+        } else {
+          onFail();
+        }
+      };
+      probe.src = sources[i];
+    }
+
+    function mostrarImagen(valor) {
+      // reset
       imagen.classList.add('hidden');
       imagen.src = "";
+      imagen.alt = "";
+      msg.textContent = "";
 
-      // Asigna la imagen según la opción
-      if (valor === "BANCO") {
-        imagen.src = "https://via.placeholder.com/400x250.png?text=BANCO"; // ← cambia este link por tu foto real
-        imagen.alt = "Banco";
-        imagen.classList.remove('hidden');
+      if (!valor) return;
+
+      const sources = rutas[valor];
+      if (!sources || sources.length === 0) {
+        msg.textContent = "Aún no hay imagen configurada para " + valor + ".";
+        return;
       }
 
-      if (valor === "AUNA") {
-        imagen.src = "https://via.placeholder.com/400x250.png?text=AUNA";
-        imagen.alt = "Auna";
-        imagen.classList.remove('hidden');
-      }
+      cargarConFallback(
+        sources,
+        (okSrc) => {
+          imagen.src = okSrc;
+          imagen.alt = valor;
+          imagen.classList.remove('hidden');
+        },
+        () => {
+          msg.textContent = "No se encontró la imagen para " + valor + ". Verifica la ruta en GitHub.";
+        }
+      );
+    }
 
-      if (valor === "DUPREE") {
-        imagen.src = "https://via.placeholder.com/400x250.png?text=DUPREE";
-        imagen.alt = "Dupree";
-        imagen.classList.remove('hidden');
-      }
-
-      if (valor === "NATURA") {
-        imagen.src = "https://via.placeholder.com/400x250.png?text=NATURA";
-        imagen.alt = "Natura";
-        imagen.classList.remove('hidden');
-      }
+    selector.addEventListener('change', () => {
+      mostrarImagen(selector.value);
     });
   </script>
-
 </body>
 </html>
