@@ -8,12 +8,12 @@
 </head>
 <body class="bg-gray-100">
 
-  <!-- Barra superior fija con el selector -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
-    <div class="max-w-6xl mx-auto flex items-center gap-4 p-4">
-      <h1 class="text-lg md:text-xl font-semibold">Selecciona un Departamento</h1>
+  <!-- Barra superior más pequeña -->
+  <header class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto flex items-center gap-3 p-2">
+      <h1 class="text-sm md:text-base font-medium text-gray-700">Selecciona un Departamento</h1>
       <select id="departamento"
-              class="border p-2 rounded-md text-sm md:text-base"
+              class="border border-gray-300 p-1 rounded-md text-sm"
               aria-label="Departamento">
         <option value="">-- Selecciona --</option>
         <option value="BANCO">BANCO</option>
@@ -24,17 +24,16 @@
     </div>
   </header>
 
-  <!-- Contenido principal: la imagen ocupa toda la pantalla disponible -->
-  <main class="pt-20"> <!-- deja espacio para la barra superior -->
-    <div class="w-screen h-[calc(100vh-5rem)] flex items-center justify-center overflow-hidden">
-      <!-- El contenedor ocupa todo, la imagen se ajusta dentro sin recortarse -->
+  <!-- Contenedor principal -->
+  <main class="pt-12"> <!-- menos espacio arriba -->
+    <div class="w-screen h-[calc(100vh-3rem)] flex items-center justify-center overflow-hidden">
       <img id="imagenDepartamento"
            src=""
            alt=""
            class="w-full h-full object-contain select-none"
            style="image-rendering: -webkit-optimize-contrast;" />
     </div>
-    <p id="msg" class="text-center text-sm text-gray-600 mt-2"></p>
+    <p id="msg" class="text-center text-xs text-gray-500 mt-1"></p>
   </main>
 
   <script>
@@ -42,7 +41,6 @@
     const imagen = document.getElementById('imagenDepartamento');
     const msg = document.getElementById('msg');
 
-    // Rutas (puedes agregar las demás cuando tengas las imágenes)
     const rutas = {
       BANCO: ["/img/banco.jpg", "banco.jpg"],
       AUNA:  ["/img/banco.jpg", "AUNA.jpg"],
@@ -82,21 +80,18 @@
           imagen.alt = valor;
         },
         () => {
-          msg.textContent = "No se encontró la imagen para " + valor + ". Verifica la ruta.";
+          msg.textContent = "No se encontró la imagen para " + valor + ".";
         }
       );
     }
 
-    // Si quieres que BANCO aparezca por defecto al cargar:
+    // Mostrar BANCO por defecto
     selector.value = "BANCO";
     mostrarImagen("BANCO");
 
     selector.addEventListener('change', () => {
       mostrarImagen(selector.value);
     });
-
-    // Ajusta la altura si cambias el alto de la cabecera:
-    // Cambia 5rem en h-[calc(100vh-5rem)] por el valor real de la barra.
   </script>
 </body>
 </html>
